@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 import '../home/home_screen.dart';
+import 'location_access_screen.dart';
 
 class VerificationScreen extends StatefulWidget {
   final String email;
@@ -77,13 +79,15 @@ class _VerificationScreenState extends State<VerificationScreen> {
     }
   }
 
-  void _handleVerify() {
+  Future<void> _handleVerify() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', true);
     final code = _controllers.map((c) => c.text).join();
     if (code.length == 4) {
       // TODO: Add actual verification logic here
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        MaterialPageRoute(builder: (context) => const LocationAccessScreen()),
       );
     }
   }
