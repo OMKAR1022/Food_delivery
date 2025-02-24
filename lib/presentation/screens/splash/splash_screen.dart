@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../auth/login_screen.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../home/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,17 +16,54 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToOnboarding();
+    _checkAppState();
   }
 
-  _navigateToOnboarding() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) return;
+  Future<void> _checkAppState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-    );
+      // Check if user has seen onboarding
+      final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+
+      // Check if user is logged in
+      final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+      // Short delay for splash screen animation
+      await Future.delayed(const Duration(milliseconds: 1000));
+
+      if (!mounted) return;
+
+      if (isLoggedIn) {
+        // User is logged in, go directly to home
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+              (route) => false,
+        );
+      } else if (!hasSeenOnboarding) {
+        // First time user, show onboarding
+        await prefs.setBool('hasSeenOnboarding', true);
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+              (route) => false,
+        );
+      } else {
+        // Returning user but not logged in
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+        );
+      }
+    } catch (e) {
+      // If there's an error, default to login screen
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+              (route) => false,
+        );
+      }
+    }
   }
 
   @override
